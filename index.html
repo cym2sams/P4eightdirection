@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>東南西北及四隅方向大探險</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "Microsoft JhengHei", sans-serif; 
+            text-align: center; 
+            background-color: #f0f7f4; 
+            margin: 0; 
+            padding: 10px; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: none;
+            overflow: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+        .screen { 
+            display: none; 
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 20px; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08); 
+            max-width: 650px; 
+            margin: auto; 
+            position: relative;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        .active { display: block; }
+        h1, h2, h3 { color: #2c3e50; margin: 8px 0; }
+        button { 
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            font-size: 18px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            margin: 5px; 
+            font-weight: bold; 
+            touch-action: manipulation; 
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        select { font-size: 18px; padding: 10px; margin: 8px; width: 85%; max-width: 260px; text-align: center; border-radius: 8px; border: 2px solid #bdc3c7; background-color: #fff; }
+        
+        #game-header { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            color: #2c3e50; 
+            background-color: #ecf0f1;
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+        .streak-pill {
+            background-color: #e67e22;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        #question-box { 
+            background-color: #e8f4fd; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-size: 20px; 
+            margin-bottom: 10px; 
+            border-left: 5px solid #3498db; 
+            line-height: 1.4; 
+            font-weight: bold;
+            color: #2c3e50; 
+        }
+        .highlight-focus {
+            background-color: #f1c40f !important;
+            color: #000000 !important;
+            padding: 2px 6px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.8);
+        }
+        #correct-toast {
+            display: none;
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(46, 204, 113, 0.95);
+            color: white;
+            padding: 20px 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            z-index: 1000;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .toast-icon { font-size: 55px; line-height: 1; margin-bottom: 8px; }
+        .toast-title { font-size: 24px; font-weight: bold; }
+        .toast-points { font-size: 18px; margin-top: 4px; font-weight: bold; }
+        
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        #hint-box { 
+            display: none; 
+            background-color: #fff2f0; 
+            color: #cf1322; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            margin: 8px auto; 
+            font-weight: bold; 
+            border: 2px solid #ff4d4f; 
+            line-height: 1.4; 
+            max-width: 520px;
+        }
+        .hint-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 20px;
+            color: #e74c3c;
+            margin-bottom: 4px;
+        }
+        
+        /* 第一關：米字型羅盤佈局 */
+        .drag-game-container { 
+            position: relative; 
+            width: 320px; 
+            height: 440px; 
+            margin: 5px auto; 
+            background-color: transparent; 
+        }
+        .compass-canvas-area { 
+            position: absolute; 
+            left: 30px; 
+            top: 0px; 
+            width: 260px; 
+            height: 260px; 
+            background-color: #ffffff; 
+            border-radius: 15px; 
+        }
+        
+        .compass-crosshair { position: absolute; z-index: 1; }
+        .cross-v { width: 2px; height: 140px; left: 129px; top: 60px; background-color: #000000; }
+        .cross-h { width: 140px; height: 2px; left: 60px; top: 129px; background-color: #000000; }
+        
+        .cross-d1 { 
+            width: 2px; height: 140px; left: 129px; top: 60px; 
+            transform: rotate(45deg); 
+            background-image: linear-gradient(to bottom, #cbd5e1 60%, rgba(255,255,255,0) 40%);
+            background-size: 10px 10px;
+            background-repeat: repeat-y;
+            background-color: transparent;
+        }
+        .cross-d2 { 
+            width: 2px; height: 140px; left: 129px; top: 60px; 
+            transform: rotate(-45deg); 
+            background-image: linear-gradient(to bottom, #cbd5e1 60%, rgba(255,255,255,0) 40%);
+            background-size: 10px 10px;
+            background-repeat: repeat-y;
+            background-color: transparent;
+        }
+        
+        .compass-arrow-black { 
+            position: absolute; 
+            width: 0; height: 0;
+            border-left: 10px solid transparent; 
+            border-right: 10px solid transparent; 
+            border-bottom: 20px solid #000000; 
+            left: 120px; top: 40px; 
+        }
+        .rotatable-cross { 
+            width: 260px; height: 260px;
+            position: absolute; left: 0; top: 0;
+            transform-origin: 130px 130px;
+            transition: transform 0.3s ease;
+            z-index: 1;
+        }
+        
+        .scaffold-svg-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 260px; height: 260px;
+            pointer-events: none;
+            z-index: 10; 
+            display: none; 
+        }
+        .scaffold-circle-track {
+            fill: none;
+            stroke: #2ecc71;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 628;
+            stroke-dashoffset: 628;
+            transform-origin: 130px 130px;
+        }
+        @keyframes drawTrack {
+            from { stroke-dashoffset: 628; }
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .html-north-label { 
+            position: absolute; 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #000000; 
+            width: 44px; height: 44px; 
+            line-height: 44px; 
+            text-align: center; 
+            z-index: 15; 
+        }
+        
+        .html-drop-zone { 
+            position: absolute; 
+            width: 44px; height: 44px; 
+            border: 2px dashed #bdc3c7; 
+            border-radius: 8px; 
+            background-color: #fafafa; 
+            box-sizing: border-box; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 15px; 
+            font-weight: bold; 
+            color: #bdc3c7; 
+        }
+        
+        .zone-primary { z-index: 15 !important; }
+        .zone-secondary { z-index: 5 !important; }
+        
+        .home-area {
+            position: absolute;
+            bottom: 5px;
+            left: 0;
+            width: 320px;
+            height: 160px;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .home-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+        }
+        .home-slot {
+            width: 100%;
+            height: 45px;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+        
+        .draggable-block { 
+            position: absolute;
+            width: 62px; 
+            height: 45px; 
+            color: #ffffff; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: grab; 
+            z-index: 50; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            touch-action: none; 
+            box-sizing: border-box;
+        }
+        
+        .block-primary { background-color: #e67e22; }      /* 東、南、西（正方向）：深橘色 */
+        .block-secondary { background-color: #9b59b6; }    /* 東北、東南、西南、西北（間方向）：深紫色 */
+        
+        .draggable-block:active { cursor: grabbing; opacity: 0.9; }
+        
+        /* 地圖及透明方向尺 */
+        .map-wrapper { display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; margin: 10px 0; position: relative; }
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 280px; position: relative; }
+        .grid-item { background-color: #fff9e6; border: 2px solid #f39c12; padding: 14px 0; font-size: 17px; font-weight: bold; border-radius: 10px; text-align: center; position: relative; z-index: 1; }
+        .center-highlight { background-color: #e67e22 !important; color: white; border-color: #d35400; }
+        .path-highlight { background-color: #2ecc71 !important; color: white; border-color: #27ae60; box-shadow: 0 0 10px #2ecc71; }
+        
+        .compass-slot {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .compass-container {
+            width: 120px; 
+            height: 120px;
+            position: relative;
+            background: transparent !important; 
+            border-radius: 50%;
+            border: 1.5px dashed rgba(52, 152, 219, 0.55); 
+            cursor: grab;
+            touch-action: none;
+            z-index: 100;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; }
+        th { background-color: #2ecc71; color: white; }
+        .my-rank { background-color: #fff2cc !important; font-weight: bold; }
+        .leaderboard-wrap { margin-top: 15px; border-top: 2px dashed #bdc3c7; padding-top: 10px; }
+        .empty-tips { padding: 20px 10px; color: #7f8c8d; font-size: 15px; font-style: italic; background-color: #f9f9f9; border-radius: 10px; margin: 10px 0; border: 1px dashed #bdc3c7; }
+        
+        .creator-signature {
+            position: fixed;
+            right: 15px;
+            bottom: 10px;
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="creator-signature">Designed by 陳綺雯老師</div>
+
+    <div id="login-screen" class="screen active">
+        <h1>🧭 八向探險記</h1>
+        <p style="font-size: 18px; color: #7f8c8d; margin-bottom: 8px;">請選擇你的身份：</p>
+        <select id="class-select" onchange="handleClassChange()">
+            <option value="4A">4A 班</option>
+            <option value="4B">4B 班</option>
+            <option value="4C">4C 班</option>
+            <option value="4D">4D 班</option>
+            <option value="老師">老師</option>
+        </select><br>
+        <select id="student-id-select"></select><br>
+        <button onclick="goToRules()" style="margin-top: 10px; padding: 12px 35px;">進入遊戲 ▶</button>
+        <div class="leaderboard-wrap">
+            <h3 style="color: #d35400; margin: 5px 0;">🏆 挑戰排行榜（前 10 名）</h3>
+            <div id="login-leaderboard-container"></div>
+        </div>
+    </div>
+
+    <div id="rules-screen" class="screen">
+        <h2>📜 遊戲挑戰規則</h2>
+        <p style="font-size: 17px; text-align: left; line-height: 1.6; max-width: 500px; margin: auto;">
+            1\\. 遊戲限時 <strong>3 分鐘（180 秒）</strong>，答對題數越多分數越高！<br>
+            2\\. 第一、二關須在<strong>沒有看提示的情況下，連續答對 2 題</strong>才能升級！<br>
+            3\\. 第三關為<strong>無限終極大挑戰</strong>，挑戰你的最高連勝紀錄，若答錯了連勝會歸 0 喔！
+        </p>
+        <br>
+        <button onclick="startGame()">▶ 開始挑戰</button>
+    </div>
+
+    <div id="transition-screen" class="screen">
+        <div style="padding: 20px 10px;">
+            <div style="font-size: 55px; margin-bottom: 10px;" id="trans-badge">🎉</div>
+            <h2 id="trans-title" style="color: #27ae60; font-size: 28px;">恭喜晉級！</h2>
+            <div id="trans-desc" style="font-size: 18px; color: #34495e; line-height: 1.6; margin: 15px auto; max-width: 480px; background-color: #f8f9fa; padding: 12px; border-radius: 12px; border-left: 5px solid #2ecc71;">任務說明載入中...</div>
+            <button id="btn-proceed" style="background-color: #2ecc71; font-size: 20px; padding: 14px 30px;">▶ 進入下一層挑戰</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="correct-toast">
+            <div class="toast-icon">✔️</div>
+            <div class="toast-title" id="toast-title-text">答對了！</div>
+            <div class="toast-points" id="toast-points-text">+15 分</div>
+        </div>
+        <div id="game-header">
+            <span>⏳ 剩餘：<span id="time-display" style="color:#e74c3c;">180</span> 秒</span>
+            <span id="level-title" style="color: #27ae60;">第一層：拖拉歸位</span>
+            <span>連續：<span class="streak-pill" id="streak-counter">0 / 2</span><span>⭐ 分數：<span id="score-display">0</span></span>
+        </div>
+        <div id="question-box">題目載入中...</div>
+        <div id="hint-box"></div>
+        <div id="visual-area"></div>
+        <div id="options-area"></div>
+    </div>
+
+    <div id="leaderboard-screen" class="screen">
+        <h2>🏆 挑戰結束！</h2>
+        <p style="font-size: 20px; margin: 5px 0;">你的本局分數是：<strong id="final-score" style="font-size:28px; color:#e74c3c;"></strong> 分</p>
+        <div id="rank-sentence-box" style="font-size: 22px; color: #27ae60; font-weight: bold; background-color: #e8f8f0; padding: 10px; border-radius: 10px; margin: 12px auto; max-width: 480px;"></div>
+        <h3 style="margin-top: 15px;">前 10 名排行榜</h3>
+        <div id="end-leaderboard-container"></div>
+        <br>
+        <button onclick="backToLoginScreen()">🔄 返回首頁再次挑戰</button>
+    </div>
+
+    <script>
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+
+        let player = { classId: "4A", studentId: "01 號", score: 0 };
+        let timeLeft = 180, timer = null;
+        let currentLevel = 1, consecutiveCorrect = 0, isHintStateActive = false;
+        let isRetryMode = false; 
+
+        const dirNames = ["北", "東北", "東", "東南", "南", "西南", "西", "西北"];
+        const primaryDirs = ["北", "東", "南", "西"]; 
+        const secondaryDirs = ["東北", "東南", "西南", "西北"]; 
+        const northAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+        
+        let currentNorthAngle = 0; 
+        let currentCorrectAnswer = "";
+        let currentNorthLabel = "北"; 
+        let questionCount = 0;
+        let lastAnswer = ""; 
+        let compassTx = 0, compassTy = 0;
+
+        let currentWalkingDir1 = "", currentWalkingDir2 = "";
+
+        const teacherList = ["孫麗珊主任", "邵曉盈主任", "袁紫茵老師", "陳曉晴老師", "陳綺雯老師"];
+        let leaderboardData = [];
+        
+        function initLeaderboardStorage() {
+            const saved = localStorage.getItem("compass_game_leaderboard_v3");
+            leaderboardData = saved ? JSON.parse(saved) : [];
+        }
+        function saveLeaderboardStorage() {
+            localStorage.setItem("compass_game_leaderboard_v3", JSON.stringify(leaderboardData));
+        }
+
+        const mapGrid = ["公園", "圖書館", "遊樂場", "醫院", "學校", "小食店", "巴士站", "糖果店", "花園"];
+        
+        const compassCoordinates = [];
+        for (let i = 0; i < 8; i++) {
+            let angleRad = (i * 45 - 90) * Math.PI / 180;
+            let x = Math.round(130 + 90 * Math.cos(angleRad)) - 22; 
+            let y = Math.round(130 + 90 * Math.sin(angleRad)) - 22;
+            compassCoordinates.push({ x: x, y: y });
+        }
+        
+        let level3QuestionPool = [];
+        let currentTypeID = 0; 
+        let currentQuestionDir = ""; 
+
+        function handleClassChange() {
+            const classSelect = document.getElementById("class-select");
+            const idSelect = document.getElementById("student-id-select");
+            idSelect.innerHTML = "";
+            if (classSelect.value === "老師") {
+                teacherList.forEach(name => {
+                    const opt = document.createElement("option");
+                    opt.value = name; opt.innerText = name; idSelect.appendChild(opt);
+                });
+            } else {
+                for (let i = 1; i <= 30; i++) {
+                    const opt = document.createElement("option");
+                    const numText = (i < 10 ? "0" + i : i) + " 號";
+                    opt.value = numText; opt.innerText = numText; idSelect.appendChild(opt);
+                }
+            }
+        }
+
+        function renderLeaderboardTable(tbodyId, tableContainerId, highlightMe = false) {
+            const container = document.getElementById(tableContainerId);
+            if (!container) return;
+            if (leaderboardData.length === 0) {
+                container.innerHTML = `<div class="empty-tips">📝 目前尚未有挑戰記錄，快來成為今日的第一名吧！</div>`;
+                return;
+            }
+            const tableId = tbodyId === "login-leaderboard-body" ? "login-table" : "end-table";
+            container.innerHTML = `
+                <table id="${tableId}">
+                    <thead>
+                        <tr>
+                            <th style="width: 14%;">名次</th>
+                            <th style="width: 22%;">班別/身份</th>
+                            <th style="width: 32%;">學號/姓名</th>
+                            <th style="width: 16%;">最佳分</th>
+                            <th style="width: 16%;">挑戰次數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="${tbodyId}"></tbody>
+                </table>
+            `;
+            const tbody = document.getElementById(tbodyId);
+            leaderboardData.sort((a, b) => b.score - a.score || a.attempts - b.attempts);
+            const top10 = leaderboardData.slice(0, 10);
+            let html = "";
+            top10.forEach((row, idx) => {
+                const isMe = highlightMe && (row.classId === player.classId && row.studentId === player.studentId);
+                const rankDisplay = idx === 0 ? "🥇 1" : idx === 1 ? "🥈 2" : idx === 2 ? "🥉 3" : (idx + 1);
+                html += `
+                    <tr class="${isMe ? 'my-rank' : ''}">
+                        <td>${rankDisplay}</td>
+                        <td>${row.classId}</td>
+                        <td>${row.studentId}</td>
+                        <td style="color:#e67e22; font-weight:bold;">${row.score}</td>
+                        <td>${row.attempts || 1} 次</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function goToRules() {
+            player.classId = document.getElementById("class-select").value;
+            player.studentId = document.getElementById("student-id-select").value;
+            showScreen("rules-screen");
+        }
+
+        function startGame() {
+            player.score = 0; 
+            timeLeft = 180;
+            currentLevel = 1; 
+            consecutiveCorrect = 0;
+            level3QuestionPool = []; lastAnswer = "";
+            document.getElementById("score-display").innerText = player.score;
+            showScreen("game-screen");
+            startTimer();
+            nextQuestion();
+        }
+
+        function startTimer() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("time-display").innerText = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function pauseTimer() { if (timer) clearInterval(timer); }
+
+        function triggerLevelTransition(targetLevel) {
+            pauseTimer(); 
+            const transBadge = document.getElementById("trans-badge");
+            const transTitle = document.getElementById("trans-title");
+            const transDesc = document.getElementById("trans-desc");
+            const btnProceed = document.getElementById("btn-proceed");
+            
+            if (targetLevel === 2) {
+                transBadge.innerText = "🌟";
+                transTitle.innerText = "第一層挑戰成功！";
+                transDesc.innerHTML = `太棒了！你已掌握八個方向的羅盤關係！<br><br><strong>即進入：第二層「社區相對方位」</strong><br><strong>【透明八向尺】已解鎖！</strong>拖動方向標，放到地圖上比對方向吧！`;
+            } else if (targetLevel === 3) {
+                transBadge.innerText = "🚀";
+                transTitle.innerText = "第二層挑戰成功！";
+                transDesc.innerHTML = `非常出色！你已能準確分辨社區地圖上的相對方位！<br><br><strong>即進入：第三層「八向綜合挑戰」</strong><br>準備接受「填空方位對比」、「尋找方位建築」與「小熊兩步路線」的綜合挑戰！`;
+            }
+            btnProceed.onclick = function() {
+                currentLevel = targetLevel; consecutiveCorrect = 0; isRetryMode = false; lastAnswer = "";
+                showScreen("game-screen"); startTimer(); nextQuestion();
+            };
+            showScreen("transition-screen");
+        }
+
+        function triggerCorrectEffect(pointsAdded, callback, customTitle = "答對了！") {
+            const toast = document.getElementById("correct-toast");
+            document.getElementById("toast-title-text").innerText = customTitle;
+            document.getElementById("toast-points-text").innerText = pointsAdded > 0 ? `+${pointsAdded} 分` : "學懂了！繼續加油！";
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; callback(); }, 900);
+        }
+
+        function nextQuestion() {
+            isHintStateActive = false; isRetryMode = false;
+            document.getElementById("hint-box").style.display = "none";
+            document.getElementById("options-area").innerHTML = "";
+            document.getElementById("visual-area").innerHTML = "";
+            
+            if (currentLevel === 3) {
+                document.getElementById("streak-counter").innerText = `${consecutiveCorrect}`;
+            } else {
+                document.getElementById("streak-counter").innerText = `${consecutiveCorrect} / 2`;
+            }
+            const levelNames = ["", "第一層：八向羅盤歸位", "第二層：社區相對方位", "第三層：八向綜合挑戰"];
+            document.getElementById("level-title").innerText = levelNames[currentLevel];
+            
+            currentNorthAngle = northAngles[Math.floor(Math.random() * northAngles.length)];
+            questionCount++;
+            currentNorthLabel = (questionCount % 2 === 1) ? "北" : "N";
+            compassTx = 0; compassTy = 0;
+            
+            if (currentLevel === 1) generateLevel1Drag();
+            else if (currentLevel === 2) generateLevel2();
+            else generateLevel3Assorted(); 
+        }
+
+        function getRelativeDirName(absIndex) {
+            let offset = Math.round(currentNorthAngle / 45);
+            return dirNames[(absIndex - offset + 8) % 8];
+        }
+
+        function generateLevel1Drag() {
+            document.getElementById("question-box").innerHTML = `看清楚黑色箭頭（${currentNorthLabel}）的位置。把下方的 <strong>「7 個方向方塊」</strong> 拖拉到羅盤對應的框格中！`;
+            
+            let nAbsIdx = Math.round(currentNorthAngle / 45) % 8;
+            let nCoords = compassCoordinates[nAbsIdx];
+            
+            let moveDistance = 10;
+            let labelAngleRad = (nAbsIdx * 45 - 90) * Math.PI / 180;
+            let labelX = nCoords.x + Math.round(moveDistance * Math.cos(labelAngleRad));
+            let labelY = nCoords.y + Math.round(moveDistance * Math.sin(labelAngleRad));
+            
+            let northTextHTML = `<div class="html-north-label zone-primary" style="left: ${labelX}px; top: ${labelY}px;">${currentNorthLabel}</div>`;
+            
+            let dropZonesHTML = "";
+            for (let i = 0; i < 8; i++) {
+                if (i !== nAbsIdx) {
+                    let dirName = getRelativeDirName(i);
+                    let coords = compassCoordinates[i];
+                    let isPrimary = primaryDirs.includes(dirName);
+                    let zClass = isPrimary ? "zone-primary" : "zone-secondary";
+                    dropZonesHTML += `<div class="html-drop-zone ${zClass}" id="zone-${dirName}" data-expected-dir="${dirName}" style="left: ${coords.x}px; top: ${coords.y}px;">❓</div>`;
+                }
+            }
+            
+            document.getElementById("visual-area").innerHTML = `
+                <div class="drag-game-container" id="drag-arena">
+                    <div class="compass-canvas-area" id="compass-area">
+                        <div class="rotatable-cross" style="transform: rotate(${currentNorthAngle}deg);">
+                            <div class="compass-crosshair cross-v"></div>
+                            <div class="compass-crosshair cross-h"></div>
+                            <div class="compass-crosshair cross-d1"></div>
+                            <div class="compass-crosshair cross-d2"></div>
+                            <div class="compass-arrow-black"></div>
+                        </div>
+                        <svg class="scaffold-svg-overlay" id="overlay-svg">
+                            <circle class="scaffold-circle-track" id="anim-track" cx="130" cy="130" r="90" />
+                        </svg>
+                        ${northTextHTML} ${dropZonesHTML}
+                    </div>
+                    <div class="home-area" id="home-area">
+                        <div class="home-row" id="home-row-primary"></div>
+                        <div class="home-row" id="home-row-secondary"></div>
+                    </div>
+                </div>
+            `;
+            
+            const arena = document.getElementById("drag-arena");
+            const rowPrimary = document.getElementById("home-row-primary");
+            const rowSecondary = document.getElementById("home-row-secondary");
+            
+            let pDirs = ["東", "南", "西"].sort(() => Math.random() - 0.5);
+            let sDirs = ["東北", "東南", "西南", "西北"].sort(() => Math.random() - 0.5);
+            
+            for(let i=0; i<4; i++) {
+                let slot = document.createElement("div");
+                slot.className = "home-slot";
+                rowPrimary.appendChild(slot);
+            }
+            for(let i=0; i<4; i++) {
+                let slot = document.createElement("div");
+                slot.className = "home-slot";
+                rowSecondary.appendChild(slot);
+            }
+            
+            const pSlots = rowPrimary.querySelectorAll('.home-slot');
+            const sSlots = rowSecondary.querySelectorAll('.home-slot');
+            
+            pDirs.forEach((dir, idx) => {
+                let block = document.createElement("div");
+                block.className = "draggable-block block-primary";
+                block.id = `block-${dir}`;
+                block.dataset.dir = dir; 
+                block.innerText = dir;
+                
+                let slotRect = pSlots[idx].getBoundingClientRect();
+                let arenaRect = arena.getBoundingClientRect();
+                let homeX = Math.round(slotRect.left - arenaRect.left);
+                let homeY = Math.round(slotRect.top - arenaRect.top);
+                
+                block.dataset.homeX = homeX; 
+                block.dataset.homeY = homeY;
+                block.style.left = homeX + "px"; 
+                block.style.top = homeY + "px";
+                arena.appendChild(block);
+            });
+            
+            sDirs.forEach((dir, idx) => {
+                let block = document.createElement("div");
+                block.className = "draggable-block block-secondary";
+                block.id = `block-${dir}`;
+                block.dataset.dir = dir; 
+                block.innerText = dir;
+                
+                let slotRect = sSlots[idx].getBoundingClientRect();
+                let arenaRect = arena.getBoundingClientRect();
+                let homeX = Math.round(slotRect.left - arenaRect.left);
+                let homeY = Math.round(slotRect.top - arenaRect.top);
+                
+                block.dataset.homeX = homeX; 
+                block.dataset.homeY = homeY;
+                block.style.left = homeX + "px"; 
+                block.style.top = homeY + "px";
+                arena.appendChild(block);
+            });
+            
+            document.getElementById("options-area").innerHTML = `<button id="btn-submit-drag" onclick="checkDragLevel1()">📥 確定提交</button>`;
+            setTimeout(initFlawlessDragEngine, 100);
+        }
+
+        function initFlawlessDragEngine() {
+            const blocks = document.querySelectorAll('.draggable-block');
+            const arena = document.getElementById('drag-arena');
+            blocks.forEach(block => {
+                let grabOffsetX = 0, grabOffsetY = 0;
+                block.onpointerdown = function(e) {
+                    block.setPointerCapture(e.pointerId);
+                    let bRect = block.getBoundingClientRect();
+                    grabOffsetX = e.clientX - bRect.left; 
+                    grabOffsetY = e.clientY - bRect.top;
+                    
+                    if (block.dataset.placedZone) {
+                        const originalZone = document.querySelector(`.html-drop-zone[data-expected-dir="${block.dataset.placedZone}"]`);
+                        if (originalZone) {
+                            originalZone.innerHTML = "❓"; 
+                            originalZone.style.backgroundColor = "#fafafa"; 
+                            originalZone.style.border = "2px dashed #bdc3c7";
+                        }
+                        block.dataset.placedZone = "";
+                    }
+                    block.style.zIndex = 200; 
+                    block.style.transition = 'none';
+                };
+                
+                block.onpointermove = function(e) {
+                    if (!block.hasPointerCapture(e.pointerId)) return;
+                    let aRect = arena.getBoundingClientRect();
+                    block.style.left = (e.clientX - aRect.left - grabOffsetX) + "px";
+                    block.style.top = (e.clientY - aRect.top - grabOffsetY) + "px";
+                };
+                
+                block.onpointerup = function(e) {
+                    block.releasePointerCapture(e.pointerId);
+                    block.style.transition = 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)'; 
+                    block.style.zIndex = 50;
+                    
+                    let bRect = block.getBoundingClientRect();
+                    let bCenter = { x: bRect.left + bRect.width / 2, y: bRect.top + bRect.height / 2 };
+                    let aRect = arena.getBoundingClientRect();
+                    let targetZone = null;
+                    
+                    document.querySelectorAll('.html-drop-zone').forEach(zone => {
+                        let zRect = zone.getBoundingClientRect();
+                        let zCenter = { x: zRect.left + zRect.width / 2, y: zRect.top + zRect.height / 2 };
+                        if (Math.hypot(bCenter.x - zCenter.x, bCenter.y - zCenter.y) < 35) {
+                            targetZone = zone;
+                        }
+                    });
+                    
+                    if (targetZone) {
+                        let expected = targetZone.getAttribute('data-expected-dir');
+                        blocks.forEach(other => {
+                            if (other !== block && other.dataset.placedZone === expected) {
+                                other.dataset.placedZone = ""; 
+                                other.style.left = other.dataset.homeX + "px"; 
+                                other.style.top = other.dataset.homeY + "px";
+                            }
+                        });
+                        let zRect = targetZone.getBoundingClientRect();
+                        block.style.left = (zRect.left - aRect.left + (zRect.width - 62) / 2) + "px";
+                        block.style.top = (zRect.top - aRect.top + (zRect.height - 45) / 2) + "px";
+                        block.dataset.placedZone = expected;
+                        targetZone.innerHTML = ""; 
+                        targetZone.style.border = "none";
+                    } else {
+                        block.style.left = block.dataset.homeX + "px"; 
+                        block.style.top = block.dataset.homeY + "px"; 
+                        block.dataset.placedZone = "";
+                    }
+                };
+            });
+        }
+
+        function revealZoneDirection(dir, colorClass = "green") {
+            const zone = document.querySelector(`.html-drop-zone[data-expected-dir="${dir}"]`);
+            if (zone) {
+                zone.innerHTML = `<span style="color:#ffffff !important; font-size:14px; font-weight:900; line-height:44px; display:block;">${dir}</span>`;
+                if (colorClass === "green") {
+                    zone.style.backgroundColor = "#2ecc71"; 
+                    zone.style.borderColor = "#27ae60";
+                    zone.style.boxShadow = "0 0 10px rgba(46, 204, 113, 0.7)";
+                } else {
+                    zone.style.backgroundColor = "#9b59b6"; 
+                    zone.style.borderColor = "#8e44ad";
+                    zone.style.boxShadow = "0 0 10px rgba(155, 89, 182, 0.7)";
+                }
+                zone.style.borderStyle = "solid";
+            }
+        }
+
+        function resetBlocksForRetryLevel1() {
+            const overlaySvg = document.getElementById("overlay-svg");
+            if (overlaySvg) overlaySvg.style.display = "none";
+            document.querySelectorAll('.html-drop-zone').forEach(zone => {
+                zone.innerHTML = "❓"; zone.style.backgroundColor = "#fafafa"; zone.style.border = "2px dashed #bdc3c7"; zone.style.boxShadow = "none";
+            });
+            document.querySelectorAll('.draggable-block').forEach(b => {
+                b.style.display = 'flex'; b.style.visibility = 'visible'; b.style.transition = 'all 0.3s ease';
+                b.style.left = b.dataset.homeX + "px"; b.style.top = b.dataset.homeY + "px"; b.dataset.placedZone = "";
+            });
+            document.getElementById("btn-submit-drag").disabled = false;
+        }
+
+        function checkDragLevel1() {
+            const blocks = document.querySelectorAll('.draggable-block');
+            let placedCount = 0, correctCount = 0;
+            blocks.forEach(b => {
+                if (b.dataset.placedZone) {
+                    placedCount++;
+                    if (b.dataset.placedZone === b.dataset.dir) correctCount++;
+                }
+            });
+            
+            if (placedCount < 7) {
+                alert("你還沒放完所有方塊喔！請把 7 個方塊都放進對應格子。");
+                return;
+            }
+            
+            let hint = document.getElementById("hint-box");
+            if (correctCount === 7) {
+                blocks.forEach(b => b.style.backgroundColor = "#2ecc71");
+                if (!isHintStateActive) {
+                    consecutiveCorrect++; player.score += 15;
+                    document.getElementById("score-display").innerText = player.score;
+                    triggerCorrectEffect(15, () => {
+                        if (consecutiveCorrect >= 2) { triggerLevelTransition(2); return; }
+                        nextQuestion();
+                    }, "答對了！");
+                } else {
+                    triggerCorrectEffect(0, () => { nextQuestion(); }, "✔️ 訂正成功！學懂了！");
+                }
+            } else {
+                consecutiveCorrect = 0; isHintStateActive = true; isRetryMode = true;
+                document.getElementById("streak-counter").innerText = `0 / 2`;
+                hint.style.display = "block";
+                document.getElementById("btn-submit-drag").disabled = true;
+                blocks.forEach(b => b.style.display = 'none');
+                
+                const overlaySvg = document.getElementById("overlay-svg");
+                const track = document.getElementById("anim-track");
+                
+                document.querySelector('.cross-d1').style.display = 'none';
+                document.querySelector('.cross-d2').style.display = 'none';
+                
+                overlaySvg.style.display = "block"; 
+                track.style.animation = 'none'; 
+                track.offsetHeight; 
+                
+                track.style.transform = `rotate(${currentNorthAngle - 90}deg)`; 
+                track.style.animation = "drawTrack 1.8s linear forwards";
+                
+                hint.innerHTML = `<div class="hint-header"><span>❌</span> <span>方向出錯了！請看分步演示</span></div>
+                    <span id="hint-step-text" style="color: #2c3e50;">1. 首先，觀察正方向的順時針關係：<strong>東 ➔ 南 ➔ 西</strong></span>`;
+                
+                setTimeout(() => revealZoneDirection("東", "green"), 400);
+                setTimeout(() => revealZoneDirection("南", "green"), 900);
+                setTimeout(() => revealZoneDirection("西", "green"), 1400);
+                
+                setTimeout(() => {
+                    overlaySvg.style.display = "none";
+                    track.style.animation = 'none';
+                    
+                    document.querySelector('.cross-d1').style.display = 'block';
+                    document.querySelector('.cross-d2').style.display = 'block';
+                    
+                    document.getElementById("hint-step-text").innerHTML = `2. 光圈已隱藏！現在在東南西北的基礎上看四隅方向：<strong>東北 ➔ 東南 ➔ 西南 ➔ 西北</strong>`;
+                }, 2100);
+                
+                setTimeout(() => revealZoneDirection("東北", "purple"), 2600);
+                setTimeout(() => revealZoneDirection("東南", "purple"), 3100);
+                setTimeout(() => revealZoneDirection("西南", "purple"), 3600);
+                setTimeout(() => revealZoneDirection("西北", "purple"), 4100);
+                
+                setTimeout(() => {
+                    document.getElementById("hint-step-text").innerHTML = `3. 現在，請你親手把 7 個方塊放回正確的格子裡！`;
+                    resetBlocksForRetryLevel1();
+                }, 5600);
+            }
+        }
+
+        // ================= 數學引擎 =================
+        function getEightWayDirection(fromIdx, toIdx) {
+            let r_from = Math.floor(fromIdx / 3), c_from = fromIdx % 3;
+            let r_to = Math.floor(toIdx / 3), c_to = toIdx % 3;
+            let dr = r_to - r_from; 
+            let dc = c_to - c_from;
+            
+            let absDirName = "";
+            if (dr < 0 && dc === 0) absDirName = "北";
+            else if (dr === 0 && dc > 0) absDirName = "東";
+            else if (dr > 0 && dc === 0) absDirName = "南";
+            else if (dr === 0 && dc < 0) absDirName = "西";
+            else if (Math.abs(dr) === Math.abs(dc) && dr !== 0) {
+                if (dr < 0 && dc > 0) absDirName = "東北";
+                else if (dr > 0 && dc > 0) absDirName = "東南";
+                else if (dr > 0 && dc < 0) absDirName = "西南";
+                else if (dr < 0 && dc < 0) absDirName = "西北";
+            }
+            
+            if (!absDirName) return "";
+            
+            let absIdx = dirNames.indexOf(absDirName);
+            return getRelativeDirName(absIdx);
+        }
+
+        function checkGeomDirectionMatch(bIdx, aIdx, expectedRelativeDir) {
+            let r_b = Math.floor(bIdx / 3), c_b = bIdx % 3;
+            let r_a = Math.floor(aIdx / 3), c_a = aIdx % 3;
+            let dr = r_a - r_b;
+            let dc = c_a - c_b;
+            
+            let relIdx = dirNames.indexOf(expectedRelativeDir);
+            let offset = Math.round(currentNorthAngle / 45);
+            let absIdx = (relIdx + offset) % 8;
+            let absDir = dirNames[absIdx];
+            
+            if (absDir === "北")   return (dr < 0 && dc === 0);
+            if (absDir === "東北") return (dr < 0 && dc > 0 && Math.abs(dr) === Math.abs(dc));
+            if (absDir === "東")   return (dr === 0 && dc > 0);
+            if (absDir === "東南") return (dr > 0 && dc > 0 && Math.abs(dr) === Math.abs(dc));
+            if (absDir === "南")   return (dr > 0 && dc === 0);
+            if (absDir === "西南") return (dr > 0 && dc < 0 && Math.abs(dr) === Math.abs(dc));
+            if (absDir === "西")   return (dr === 0 && dc < 0);
+            if (absDir === "西北") return (dr < 0 && dc < 0 && Math.abs(dr) === Math.abs(dc));
+            
+            return false;
+        }
+
+        function getDestinationIndex(startIdx, relativeDir) {
+            let r = Math.floor(startIdx / 3), c = startIdx % 3;
+            
+            let relIdx = dirNames.indexOf(relativeDir);
+            let offset = Math.round(currentNorthAngle / 45);
+            let absIdx = (relIdx + offset) % 8;
+            let absDir = dirNames[absIdx];
+            
+            let dr = 0, dc = 0;
+            if (absDir === "北") { dr = -1; dc = 0; }
+            else if (absDir === "東北") { dr = -1; dc = 1; }
+            else if (absDir === "東") { dr = 0; dc = 1; }
+            else if (absDir === "東南") { dr = 1; dc = 1; }
+            else if (absDir === "南") { dr = 1; dc = 0; }
+            else if (absDir === "西南") { dr = 1; dc = -1; }
+            else if (absDir === "西") { dr = 0; dc = -1; }
+            else if (absDir === "西北") { dr = -1; dc = -1; }
+            
+            let targetR = r + dr, targetC = c + dc;
+            if (targetR >= 0 && targetR < 3 && targetC >= 0 && targetC < 3) {
+                return targetR * 3 + targetC;
+            }
+            return -1;
+        }
+
+        function generateLevel2() {
+            let typeIdx = Math.floor(Math.random() * 2);
+            let start, target, expectedDir = "", attempts = 0;
+            
+            do {
+                start = Math.floor(Math.random() * 9);
+                target = Math.floor(Math.random() * 9);
+                if (start !== target) {
+                    expectedDir = getEightWayDirection(start, target);
+                }
+                attempts++;
+            } while ((expectedDir === "" || expectedDir === lastAnswer) && attempts < 100);
+            
+            let placeB = mapGrid[start], placeA = mapGrid[target];
+            compassTx = 0; compassTy = 0;
+            
+            const blackLineHTML = '<span style="display: inline-block; width: 65px; height: 3px; background-color: #000; margin: 0 6px; transform: translateY(6px); vertical-align: baseline;"></span>';
+            
+            if (typeIdx === 0) {
+                currentCorrectAnswer = expectedDir; 
+                lastAnswer = expectedDir;
+                
+                document.getElementById("question-box").innerHTML = `
+                    <strong>${placeA}</strong> <span id="focus-phrase">在 <strong>${placeB}</strong> 的</span>哪一方？<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以用手指拖動方向尺，放到地圖上比對方向！</span>
+                `;
+                renderMapAndCompass(-1, -1); 
+                renderDirectionButtons(placeB, target, start);
+            } else {
+                currentCorrectAnswer = placeA;
+                lastAnswer = placeA;
+                currentQuestionDir = expectedDir;
+                
+                document.getElementById("question-box").innerHTML = `
+                    ${blackLineHTML} <span id="focus-phrase">在 <strong>${placeB}</strong> 的</span> <strong style="color:#2c3e50;">${expectedDir}方</strong>。<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以用手指拖動方向尺，放到「${placeB}」上對位！</span>
+                `;
+                renderMapAndCompass(-1, -1);
+                renderBuildingButtons(placeB, target, start);
+            }
+            
+            setTimeout(initLevel2CompassDrag, 100);
+        }
+
+        function initLevel2CompassDrag() {
+            const compass = document.getElementById("mini-compass");
+            const slot = document.getElementById("compass-slot");
+            const parent = document.getElementById("grid-parent");
+            if (!compass || !slot || !parent) return;
+            compassTx = 0; compassTy = 0;
+            compass.style.transform = "translate(0px, 0px) scale(1)";
+            let startX = 0, startY = 0;
+            
+            compass.onpointerdown = function(e) {
+                compass.setPointerCapture(e.pointerId);
+                startX = e.clientX - compassTx; 
+                startY = e.clientY - compassTy;
+                compass.style.transition = 'none'; 
+                compass.style.zIndex = 500;
+            };
+            
+            compass.onpointermove = function(e) {
+                if (!compass.hasPointerCapture(e.pointerId)) return;
+                compassTx = e.clientX - startX; 
+                compassTy = e.clientY - startY;
+                compass.style.transform = `translate(${compassTx}px, ${compassTy}px)`;
+            };
+            
+            compass.onpointerup = function(e) {
+                compass.releasePointerCapture(e.pointerId);
+                compass.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)'; 
+                compass.style.zIndex = 100;
+                
+                let compassRect = compass.getBoundingClientRect();
+                let cCenter = { x: compassRect.left + compassRect.width / 2, y: compassRect.top + compassRect.height / 2 };
+                let closestGrid = null, minDistance = Infinity;
+                
+                document.querySelectorAll('.grid-item').forEach(grid => {
+                    let gRect = grid.getBoundingClientRect();
+                    let gCenter = { x: gRect.left + gRect.width / 2, y: gRect.top + gRect.height / 2 };
+                    let dist = Math.hypot(cCenter.x - gCenter.x, cCenter.y - gCenter.y);
+                    if (dist < minDistance) { minDistance = dist; closestGrid = grid; }
+                });
+                
+                if (closestGrid && minDistance < 65) {
+                    let gRect = closestGrid.getBoundingClientRect();
+                    let gCenter = { x: gRect.left + gRect.width / 2, y: gRect.top + gRect.height / 2 };
+                    let slotRect = slot.getBoundingClientRect();
+                    let sCenter = { x: slotRect.left + slotRect.width / 2, y: slotRect.top + slotRect.height / 2 };
+                    compassTx = gCenter.x - sCenter.x; 
+                    compassTy = gCenter.y - sCenter.y;
+                    compass.style.transform = `translate(${compassTx}px, ${compassTy}px) scale(1.05)`;
+                } else {
+                    compassTx = 0; compassTy = 0; 
+                    compass.style.transform = "translate(0px, 0px) scale(1)";
+                }
+            };
+        }
+
+        function generateLevel3Assorted() {
+            if (level3QuestionPool.length === 0) {
+                level3QuestionPool = Array.of(0, 1, 2, 3, 4).sort(() => Math.random() - 0.5);
+            }
+            let questionType = level3QuestionPool.pop();
+            currentTypeID = questionType; 
+            const blackLineHTML = '<span style="display: inline-block; width: 65px; height: 3px; background-color: #000; margin: 0 6px; transform: translateY(6px); vertical-align: baseline;"></span>';
+            
+            if (questionType === 0) {
+                let start, target, expectedDir = "", attempts = 0;
+                do {
+                    start = Math.floor(Math.random() * 9);
+                    target = Math.floor(Math.random() * 9);
+                    if (start !== target) {
+                        expectedDir = getEightWayDirection(start, target);
+                    }
+                    attempts++;
+                } while ((expectedDir === "" || expectedDir === lastAnswer) && attempts < 100);
+                
+                currentCorrectAnswer = expectedDir; 
+                lastAnswer = expectedDir; 
+                currentQuestionDir = expectedDir;
+                
+                let placeB = mapGrid[start], placeA = mapGrid[target];
+                document.getElementById("question-box").innerHTML = `
+                    <span id="focus-phrase"><strong>${placeB}</strong> 的</span>${blackLineHTML}方是 <strong>${placeA}</strong>。<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以拖動方向標，放到「${placeB}」上對比！</span>
+                `;
+                renderMapAndCompass(-1, -1); 
+                renderDirectionButtons(placeB, target, start);
+                setTimeout(initLevel2CompassDrag, 150);
+                
+            } else if (questionType === 1) {
+                let start, target, relDir = "", attempts = 0;
+                do {
+                    start = Math.floor(Math.random() * 9);
+                    target = Math.floor(Math.random() * 9);
+                    if (start !== target) {
+                        relDir = getEightWayDirection(start, target);
+                    }
+                    attempts++;
+                } while ((relDir === "" || mapGrid[target] === lastAnswer) && attempts < 100);
+                
+                currentCorrectAnswer = mapGrid[target]; 
+                lastAnswer = mapGrid[target]; 
+                currentQuestionDir = relDir;
+                
+                let placeB = mapGrid[start];
+                document.getElementById("question-box").innerHTML = `
+                    <span id="focus-phrase"><strong>${placeB}</strong> 的</span> <strong style="color:#2c3e50;">${relDir}方</strong>是${blackLineHTML}。<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以拖動方向標，放到「${placeB}」上對比！</span>
+                `;
+                renderMapAndCompass(-1, -1);
+                renderBuildingButtons(placeB, target, start);
+                setTimeout(initLevel2CompassDrag, 150);
+                
+            } else if (questionType === 2) {
+                let start, target, expectedDir = "", attempts = 0;
+                do {
+                    start = Math.floor(Math.random() * 9);
+                    target = Math.floor(Math.random() * 9);
+                    if (start !== target) {
+                        expectedDir = getEightWayDirection(start, target);
+                    }
+                    attempts++;
+                } while ((expectedDir === "" || expectedDir === lastAnswer) && attempts < 100);
+                
+                currentCorrectAnswer = expectedDir; 
+                lastAnswer = expectedDir; 
+                currentQuestionDir = expectedDir;
+                
+                let placeB = mapGrid[start], placeA = mapGrid[target];
+                document.getElementById("question-box").innerHTML = `
+                    <strong>${placeA}</strong> <span id="focus-phrase">在 <strong>${placeB}</strong> 的</span>哪一方？<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以用手指拖動方向標，放到地圖上比對方向！</span>
+                `;
+                renderMapAndCompass(-1, -1); 
+                renderDirectionButtons(placeB, target, start);
+                setTimeout(initLevel2CompassDrag, 150);
+                
+            } else if (questionType === 3) {
+                let start, target, expectedDir = "", attempts = 0;
+                do {
+                    start = Math.floor(Math.random() * 9);
+                    target = Math.floor(Math.random() * 9);
+                    if (start !== target) {
+                        expectedDir = getEightWayDirection(start, target);
+                    }
+                    attempts++;
+                } while ((expectedDir === "" || mapGrid[target] === lastAnswer) && attempts < 100);
+                
+                let placeB = mapGrid[start], placeA = mapGrid[target];
+                currentCorrectAnswer = placeA;
+                lastAnswer = placeA;
+                currentQuestionDir = expectedDir;
+                
+                document.getElementById("question-box").innerHTML = `
+                    ${blackLineHTML} <span id="focus-phrase">在 <strong>${placeB}</strong> 的</span> <strong style="color:#2c3e50;">${expectedDir}方</strong>。<br>
+                    <span style="font-size:15px; color:#e67e22;">💡 提示：你可以拖動方向尺，放到「${placeB}」上對比！</span>
+                `;
+                renderMapAndCompass(-1, -1);
+                renderBuildingButtons(placeB, target, start);
+                setTimeout(initLevel2CompassDrag, 150);
+                
+            } else {
+                let start, mid, end, dir1 = "", dir2 = "", attempts = 0;
+                do {
+                    start = Math.floor(Math.random() * 9);
+                    dir1 = dirNames[Math.floor(Math.random() * 8)];
+                    mid = getDestinationIndex(start, dir1);
+                    if (mid !== -1) {
+                        dir2 = dirNames[Math.floor(Math.random() * 8)];
+                        end = getDestinationIndex(mid, dir2);
+                    }
+                    attempts++;
+                } while ((mid === -1 || end === -1 || start === end || mapGrid[end] === lastAnswer) && attempts < 200);
+                
+                currentCorrectAnswer = mapGrid[end]; 
+                lastAnswer = mapGrid[end];
+                currentWalkingDir1 = dir1 + "方";
+                currentWalkingDir2 = dir2 + "方";
+                
+                document.getElementById("question-box").innerHTML = `
+                    小熊在 <strong>${mapGrid[start]}</strong>。<br>先向 <strong style="color:#2c3e50;">${dir1}方</strong> 走 1 格，再向 <strong style="color:#2c3e50;">${dir2}方</strong> 走 1 格。<br>牠最後會到達哪裡？<br><span style="font-size:15px; color:#e67e22;">💡 提示：你可以拖動方向標輔助尋找方向！</span>
+                `;
+                renderMapAndCompass(start, -1);
+                
+                let wrongPool = mapGrid.filter(p => p !== mapGrid[end] && p !== mapGrid[start]).sort(() => Math.random() - 0.5);
+                let opts = [mapGrid[end]].concat(wrongPool.slice(0, 3)).sort(() => Math.random() - 0.5);
+                let btnHtml = "";
+                opts.forEach(opt => btnHtml += `<button onclick="checkAnswer('${opt}', 3, '${mapGrid[start]}', ${end}, ${start})">${opt}</button>`);
+                document.getElementById("options-area").innerHTML = btnHtml;
+                setTimeout(initLevel2CompassDrag, 150);
+            }
+        }
+
+        function renderMapAndCompass(centerIdx, targetIdx = -1) {
+            let html = `<div class="map-wrapper"><div class="grid-container" id="grid-parent">`;
+            mapGrid.forEach((place, i) => {
+                let css = "grid-item";
+                if (i === centerIdx) css += " center-highlight";
+                if (i === targetIdx) css += " path-highlight";
+                html += `<div id="grid-${i}" class="${css}">${place}</div>`;
+            });
+            html += `</div>`;
+            
+            let nIdx = Math.round(currentNorthAngle / 45) % 8;
+            
+            const compassLabelCoords = [];
+            for (let i = 0; i < 8; i++) {
+                let rad = (i * 45 - 90) * Math.PI / 180;
+                let x = Math.round(60 + 52 * Math.cos(rad)) - 12; 
+                let y = Math.round(60 + 52 * Math.sin(rad)) - 12;
+                compassLabelCoords.push({ x: x, y: y });
+            }
+            let miniCoords = compassLabelCoords[nIdx];
+            
+            html += `
+                <div class="compass-slot" id="compass-slot">
+                    <div class="compass-container" id="mini-compass">
+                        <svg width="120" height="120" viewBox="0 0 120 120" style="background: transparent;">
+                            <g transform="rotate(${currentNorthAngle}, 60, 60)">
+                                <line x1="60" y1="20" x2="60" y2="100" stroke="#000000" stroke-width="2.5" />
+                                <line x1="20" y1="60" x2="100" y2="60" stroke="#000000" stroke-width="2.5" />
+                                <line x1="31.7" y1="31.7" x2="88.3" y2="88.3" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,3" />
+                                <line x1="88.3" y1="31.7" x2="31.7" y2="88.3" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3,3" />
+                                <polygon points="60,18 54,30 66,30" fill="#000000" />
+                            </g>
+                        </svg>
+                        <div style="position: absolute; left: ${miniCoords.x}px; top: ${miniCoords.y}px; width: 24px; height: 24px; line-height: 24px; font-size: 15px; font-weight: bold; color: #000000; text-align: center; z-index: 15;">${currentNorthLabel}</div>
+                    </div>
+                </div></div>`;
+            document.getElementById("visual-area").innerHTML = html;
+        }
+
+        function renderDirectionButtons(placeB, targetGridIdx, centerIdx) {
+            let btnHtml = "";
+            dirNames.forEach(dir => btnHtml += `<button onclick="checkAnswer('${dir}', ${currentLevel}, '${placeB}', ${targetGridIdx}, ${centerIdx})">${dir}</button>`);
+            document.getElementById("options-area").innerHTML = btnHtml;
+        }
+
+        function renderBuildingButtons(placeB, targetGridIdx, centerIdx) {
+            let correctBuilding = mapGrid[targetGridIdx];
+            let wrongPool = mapGrid.filter(name => name !== correctBuilding && name !== placeB).sort(() => Math.random() - 0.5);
+            let opts = [correctBuilding].concat(wrongPool.slice(0, 3)).sort(() => Math.random() - 0.5);
+            
+            let btnHtml = "";
+            opts.forEach(opt => btnHtml += `<button onclick="checkAnswer('${opt}', ${currentLevel}, '${placeB}', ${targetGridIdx}, ${centerIdx})">${opt}</button>`);
+            document.getElementById("options-area").innerHTML = btnHtml;
+        }
+
+        function checkAnswer(answer, level, extraParam, targetGridIdx, centerIdx) {
+            let hint = document.getElementById("hint-box");
+            
+            // 💡 徹底解決 Bug 的核心判斷邏輯：
+            let isCorrect = false;
+            
+            if (currentLevel === 3 && currentTypeID === 4) {
+                // 💡 如果是小熊「走路題型」，直接進行「終點建築物名稱」的字串完全對比！
+                isCorrect = (answer === currentCorrectAnswer);
+            } else {
+                // 如果是其他方位填空或判定題型，則使用我們重構的完美「幾何共線與射線判定法」
+                if (primaryDirs.includes(answer) || secondaryDirs.includes(answer)) {
+                    isCorrect = checkGeomDirectionMatch(centerIdx, targetGridIdx, answer);
+                } else {
+                    let ansIdx = mapGrid.indexOf(answer);
+                    isCorrect = checkGeomDirectionMatch(centerIdx, ansIdx, currentQuestionDir);
+                }
+            }
+
+            if (isCorrect) {
+                let points = (level === 2 ? 20 : 30);
+                if (!isHintStateActive) consecutiveCorrect++;
+                player.score += points;
+                document.getElementById("score-display").innerText = player.score;
+                
+                triggerCorrectEffect(points, () => {
+                    if (consecutiveCorrect >= 2 && level < 3) {
+                        triggerLevelTransition(level + 1); return;
+                    }
+                    nextQuestion();
+                }, "答對了！");
+            } else {
+                consecutiveCorrect = 0; 
+                isHintStateActive = true; 
+                isRetryMode = true;
+                
+                if (currentLevel === 3) {
+                    document.getElementById("streak-counter").innerText = "0";
+                } else {
+                    document.getElementById("streak-counter").innerText = "0 / 2";
+                }
+                
+                const focusPhrase = document.getElementById("focus-phrase");
+                if (focusPhrase) focusPhrase.classList.add("highlight-focus");
+                
+                hint.style.display = "block"; 
+                document.querySelectorAll("button").forEach(b => b.disabled = true);
+                
+                setTimeout(() => {
+                    const compass = document.getElementById("mini-compass");
+                    const centerGrid = document.getElementById(`grid-${centerIdx}`);
+                    const slot = document.getElementById("compass-slot");
+                    if (compass && centerGrid && slot) {
+                        compass.style.transition = 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)';
+                        let sRect = slot.getBoundingClientRect(); 
+                        let gRect = centerGrid.getBoundingClientRect();
+                        let sCenter = { x: sRect.left + sRect.width / 2, y: sRect.top + sRect.height / 2 };
+                        let gCenter = { x: gRect.left + gRect.width / 2, y: gRect.top + gRect.height / 2 };
+                        compassTx = gCenter.x - sCenter.x; 
+                        compassTy = gCenter.y - sCenter.y;
+                        compass.style.transform = `translate(${compassTx}px, ${compassTy}px) scale(1.05)`;
+                    }
+                }, 100);
+                
+                let specificHintText = "";
+                if (level === 2) {
+                    specificHintText = `請看！方向尺已自動貼在 <strong>『${extraParam}』</strong>（橙色中心點）上面！<br>看一看：從中心出發，哪一條刻度線對準了目標建築物？`;
+                } else if (level === 3) {
+                    if (currentTypeID === 0 || currentTypeID === 2) {
+                        specificHintText = `請對照地圖！方向尺已吸附在 <strong>『${extraParam}』</strong>（橙色中心點）上面！<br>看一看：哪一個方向看過去是目標建築物？`;
+                    } else if (currentTypeID === 1 || currentTypeID === 3) {
+                        specificHintText = `請看地圖！方向尺已吸附到 <strong>『${extraParam}』</strong> 上面！<br>沿著 <strong>『${currentQuestionDir}方』</strong> 的刻度看出去，那裡是哪一棟建築物？`;
+                    } else {
+                        renderMapAndCompass(centerIdx, -1);
+                        specificHintText = `小熊從亮起橙色的起點（<strong>${extraParam}</strong>）出發。<br>請看地圖，一步一步數：先向 <strong>${currentWalkingDir1}</strong> 走 1 格，再向 <strong>${currentWalkingDir2}</strong> 走 1 格，自己找出最後的目的地！`;
+                    }
+                }
+                hint.innerHTML = `<div class="hint-header"><span>✏️</span> <span>再試一次！請仔細觀察</span></div>${specificHintText}`;
+                setTimeout(() => { hint.style.display = "none"; document.querySelectorAll("button").forEach(b => b.disabled = false); }, 4500); 
+            }
+        }
+
+        function endGame() {
+            if (timer) clearInterval(timer);
+            document.getElementById("final-score").innerText = player.score;
+            let record = leaderboardData.find(item => item.classId === player.classId && item.studentId === player.studentId);
+            if (record) {
+                record.attempts = (record.attempts || 1) + 1;
+                if (player.score > record.score) record.score = player.score;
+            } else {
+                leaderboardData.push({ classId: player.classId, studentId: player.studentId, score: player.score, attempts: 1 });
+            }
+            saveLeaderboardStorage();
+            leaderboardData.sort((a, b) => b.score - a.score || a.attempts - b.attempts);
+            let myRank = leaderboardData.findIndex(item => item.classId === player.classId && item.studentId === player.studentId) + 1;
+            document.getElementById("rank-sentence-box").innerHTML = `🎉 你目前的排名是第 <span style="font-size:28px; color:#e74c3c;">${myRank}</span> 位！`;
+            renderLeaderboardTable("end-leaderboard-body", "end-leaderboard-container", true);
+            showScreen("leaderboard-screen");
+        }
+
+        function backToLoginScreen() {
+            renderLeaderboardTable("login-leaderboard-body", "login-leaderboard-container", false);
+            showScreen("login-screen");
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            initLeaderboardStorage(); handleClassChange();
+            renderLeaderboardTable("login-leaderboard-body", "login-leaderboard-container", false);
+        });
+    </script>
+</body>
+</html>
