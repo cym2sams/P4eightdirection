@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 💡 更新：分頁標題已改為「方向大探險」 -->
     <title>方向大探險</title>
     <style>
         body { 
@@ -342,6 +343,7 @@
     <div class="creator-signature">Designed by 陳綺雯老師</div>
 
     <div id="login-screen" class="screen active">
+        <!-- 💡 更新：登入大標題改為「八個方向探險記」 -->
         <h1>🧭 八個方向探險記</h1>
         <p style="font-size: 18px; color: #7f8c8d; margin-bottom: 8px;">請選擇你的身份：</p>
         <select id="class-select" onchange="handleClassChange()">
@@ -388,7 +390,8 @@
         <div id="game-header">
             <span>⏳ 剩餘：<span id="time-display" style="color:#e74c3c;">180</span> 秒</span>
             <span id="level-title" style="color: #27ae60;">第一層：拖拉歸位</span>
-            <span>連續：<span class="streak-pill" id="streak-counter">0 / 2</span><span>⭐ 分數：<span id="score-display">0</span></span>
+            <span>連續：<span class="streak-pill" id="streak-counter">0 / 2</span></span>
+            <span>⭐ 分數：<span id="score-display">0</span></span>
         </div>
         <div id="question-box">題目載入中...</div>
         <div id="hint-box"></div>
@@ -896,7 +899,7 @@
             }
         }
 
-        // ================= 數學引擎 =================
+        // ================= 數學引擎：嚴格過濾非正 45 度幾何斜向 =================
         function getEightWayDirection(fromIdx, toIdx) {
             let r_from = Math.floor(fromIdx / 3), c_from = fromIdx % 3;
             let r_to = Math.floor(toIdx / 3), c_to = toIdx % 3;
@@ -1262,14 +1265,11 @@
         function checkAnswer(answer, level, extraParam, targetGridIdx, centerIdx) {
             let hint = document.getElementById("hint-box");
             
-            // 💡 徹底解決 Bug 的核心判斷邏輯：
             let isCorrect = false;
             
             if (currentLevel === 3 && currentTypeID === 4) {
-                // 💡 如果是小熊「走路題型」，直接進行「終點建築物名稱」的字串完全對比！
                 isCorrect = (answer === currentCorrectAnswer);
             } else {
-                // 如果是其他方位填空或判定題型，則使用我們重構的完美「幾何共線與射線判定法」
                 if (primaryDirs.includes(answer) || secondaryDirs.includes(answer)) {
                     isCorrect = checkGeomDirectionMatch(centerIdx, targetGridIdx, answer);
                 } else {
